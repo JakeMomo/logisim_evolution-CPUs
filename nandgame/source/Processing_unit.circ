@@ -4,7 +4,6 @@
 
   <lib desc="#Wiring" name="0">
     <tool name="Splitter">
-      <a name="appear" val="right"/>
       <a name="fanout" val="16"/>
       <a name="incoming" val="16"/>
     </tool>
@@ -31,8 +30,8 @@
   <lib desc="#BFH-Praktika" name="9"/>
   <lib desc="#Input/Output-Extra" name="10"/>
   <lib desc="#Soc" name="11"/>
-  <lib desc="file#ALU.circ" name="12"/>
-  <lib desc="file#Condition.circ" name="13"/>
+  <lib desc="file#Condition.circ" name="12"/>
+  <lib desc="file#ALU.circ" name="13"/>
   <main name="main"/>
   <options>
     <a name="gateUndefined" val="ignore"/>
@@ -71,19 +70,19 @@
     <a name="circuit" val="main"/>
     <a name="circuitnamedboxfixedsize" val="true"/>
     <a name="simulationFrequency" val="1.0"/>
-    <comp lib="0" loc="(1010,590)" name="Pin">
-      <a name="appearance" val="NewPins"/>
-      <a name="facing" val="west"/>
-      <a name="label" val="j"/>
-      <a name="output" val="true"/>
-    </comp>
-    <comp lib="0" loc="(1030,440)" name="Pin">
+    <comp lib="0" loc="(1000,440)" name="Pin">
       <a name="appearance" val="NewPins"/>
       <a name="facing" val="west"/>
       <a name="label" val="R"/>
       <a name="output" val="true"/>
       <a name="radix" val="16"/>
       <a name="width" val="16"/>
+    </comp>
+    <comp lib="0" loc="(1010,590)" name="Pin">
+      <a name="appearance" val="NewPins"/>
+      <a name="facing" val="west"/>
+      <a name="label" val="j"/>
+      <a name="output" val="true"/>
     </comp>
     <comp lib="0" loc="(300,200)" name="Pin">
       <a name="appearance" val="NewPins"/>
@@ -137,8 +136,8 @@
       <a name="label" val="reg_a"/>
       <a name="output" val="true"/>
     </comp>
-    <comp lib="12" loc="(910,440)" name="ALU"/>
-    <comp lib="13" loc="(910,590)" name="Condition"/>
+    <comp lib="12" loc="(910,590)" name="Condition"/>
+    <comp lib="13" loc="(910,440)" name="ALU"/>
     <comp lib="2" loc="(610,450)" name="Multiplexer">
       <a name="selloc" val="tr"/>
       <a name="width" val="16"/>
@@ -191,7 +190,7 @@
     <wire from="(680,630)" to="(690,630)"/>
     <wire from="(910,440)" to="(920,440)"/>
     <wire from="(910,590)" to="(1010,590)"/>
-    <wire from="(920,440)" to="(1030,440)"/>
+    <wire from="(920,440)" to="(1000,440)"/>
     <wire from="(920,440)" to="(920,570)"/>
   </circuit>
 </project>
