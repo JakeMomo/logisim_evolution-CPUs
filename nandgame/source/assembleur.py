@@ -5,32 +5,8 @@ readable by a logisim rom
 """
 
 import argparse
-
-#list of operands : registers in bank, memory, buffers...
-OPERANDS = {'A':0x20 , 'D': 0x10 , '*A': 0x8}
-AFFECTATIONS = {'A': 0x480, 'D': 0x4b0}
-REG = set(['A', 'D'])
-
-# if this register is not the first in an ALU operation, sw has to be activated
-MAIN_ALU_REG = "D"
-SETABLE_REG = {'A'}
-ADDABLE_NUMBERS = {1:0x500, -1:0x700, 0:0x80} # the numbers that can be added directly to all registers
-
-ADD = 0x400 
-SUB = 0X600
-AND = 0x0
-OR = 0x100
-NOT = 0x300 # add SW if reg is A
-ZERO = 0x80
-OP_AFFECT = 0x480
-
-SW = 0x40
-ZX = 0x80
-
-I_DATA = 0x0 # useful...
-I_ALU = 0x8000
-REG_FIELD = 0x38
-
+from constants import *
+from utils import *
 
 
 def parse_line(line, num_line):
@@ -51,10 +27,10 @@ def parse_line(line, num_line):
 		# Extract destinations
 		list_dest = dest.replace(" ", "").split(',') # get rid of spaces and commas
 		for var in list_dest: 
-			if not var.upper() in OPERANDS:
+			if not var.upper() in AFFECTABLE:
 				raise Exception(f"Error instruction {num_line+1} : destination {var} is not valid")
 			else:
-				binary_code |= OPERANDS[var]
+				binary_code |= AFFECTABLE[var]
 
 
 
@@ -63,19 +39,7 @@ def parse_line(line, num_line):
 		# HARD NUMBER INITIALIZATION
 		try: 
 			number = int(source.replace(" ", ""))
-			if number not in ADDABLE_NUMBERS:
-				if not all(dest in SETABLE_REG for dest in list_dest): # you can't set all registers unfortunately
-					raise Exception(f"Error instruction {num_line+1} : not all destinations {list_dest} are setable")
-
-				if number > 2**(15) - 1: # can't load values greater than this in A
-							raise Exception(f"Error instruction {num_line+1} : can't load value {res}, too big")
-
-				binary_code &= ~REG_FIELD # clean potential destinations that would false the value (just in case)
-				binary_code |= number
-				binary_code |= I_DATA
-
-			else:
-				binary_code |= ADDABLE_NUMBERS[number] | ZERO | I_ALU
+			binary_code |= op_initialization(number, list_dest)
 
 			return binary_code
 
@@ -99,64 +63,22 @@ def parse_line(line, num_line):
 			operation_type = OP_AFFECT
 
 
-		""" DETERMINE OPERANDS AND DESTINATIONS"""
+		""" DETERMINE AFFECTABLE AND DESTINATIONS"""
 
 		# ADDITION
 		if operation_type == ADD:
 			gauche, droite = source.split("+")
 			gauche, droite = gauche.replace(" ", ""), droite.replace(" ", "")
 
+			binary_code |= op_add(gauche, droite)
 
-			if gauche.upper() != MAIN_ALU_REG: # we have to switch
-				binary_code |= SW
+			return binary_code
+
+
+			"""useless because addition, but may be useful for sub"""
+			#if gauche.upper() != MAIN_ALU_REG: # we have to switch
+			#	binary_code |= SW
 			# for now there are only 2 registers so there is no ambiguity
-
-
-			if gauche in REG and droite in REG:
-				binary_code |= ADD | I_ALU
-				return binary_code
-
-
-			elif gauche in REG and not(droite in REG): # e.g A + 1
-				try:
-					number = int(droite)
-					if number not in ADDABLE_NUMBERS:
-						raise Exception(f"Error at instruction {num_line+1} : can't add value {droite} and register {gauche} directly")
-
-					binary_code |= ADDABLE_NUMBERS[number] | I_ALU
-
-				except ValueError:
-					raise Exception(f"Error instruction {num_line+1} : {droite} is not a number or valid regiter")
-
-
-			elif not(gauche in REG) and droite in REG: # e.g 1 + A
-				try:
-					number = int(gauche)
-					if number not in ADDABLE_NUMBERS:
-						raise Exception(f"Error at instruction {num_line+1} : can't add value {gauche} and register {droite} directly")
-
-					binary_code |= ADDABLE_NUMBERS[number] | I_ALU
-
-				except ValueError:
-					raise Exception(f"Error instruction {num_line+1} : {gauche} is not a number or valid regiter")
-
-
-			elif not(gauche in REG) and not(droite in REG): # both operands are plain number, just add them
-				try:
-					un = int(gauche)
-					deux = int(droite)
-					res = un + deux
-
-					if res > 2**(15) - 1: # can't load values greater than this in A
-						raise Exception(f"Error at instruction {num_line+1} : can't load value {res}, too big")
-
-					if not all(dest in SETABLE_REG for dest in list_dest): # you can't set all registers unfortunately
-						raise Exception(f"Error at instruction {num_line+1} : not all destinations {list_dest} are setable")
-					binary_code |= res
-					binary_code |= I_DATA
-
-				except ValueError:
-					raise Exception(f"Error at instruction {num_line+1} : {gauche} and {droite} are not valid operands")
 
 		
 		# - (including negations)
@@ -172,11 +94,7 @@ def parse_line(line, num_line):
 		# assignation
 		elif operation_type == OP_AFFECT:
 			operand = source.replace(" ", "")
-			print(f"ligne {num_line} : ", operand)
-			if operand in OPERANDS:
-				binary_code |= OPERANDS[operand] | I_ALU
-			else:
-				raise Exception(f"Error at instruction {num_line+1} : {operand} is not a valid operand")
+			binary_code |= op_affectation(operand)
 
 		else:
 			raise Exception(f"Error at instruction {num_line+1} : unrecognized operation")
@@ -191,10 +109,12 @@ def write_binary(fichier):
 	code += "0000:"
 
 	lines = fichier.readlines()
+	lines = [elt for elt in lines if elt != '\n']
 	if(len(lines) > 2 ** 25):
 		raise Exception("Error : program is too big (>2^25)")  # bon ça arrivera jamais
 
 	num = 0
+	print(lines)
 	for line in lines:
 		code += " " + format(parse_line(line, num), '04x') # the four last hex numbers 
 		num += 1
