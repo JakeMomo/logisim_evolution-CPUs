@@ -5,6 +5,19 @@ D = A
 
 D = D + 1
 D = A + D
+D = 1 + D
+
+*A = D | A
+*A = A & D
+
+//foire
+~A ; JEQ
+D = A - D
+D = A - 1
+A = 0
+D = 0 ; JEQ
 
 A = 0
-*A = D + 1
+D = 0
+A = 12
+D = A
