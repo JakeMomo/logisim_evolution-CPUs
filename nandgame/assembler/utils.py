@@ -122,7 +122,7 @@ def op_sub(gauche: str, droite: str, num_line: int) -> int:
 def op_and(gauche: str, droite: str, num_line: int) -> int:
 	res = 0x0
 
-	if not gauche in OPERANDS and droite in OPERANDS:
+	if not (gauche in OPERANDS and droite in OPERANDS):
 		raise Exception(f"Error at instruction {num_line+1} : both {gauche} and {droite} have to be valid operands in ({OPERANDS})")
 
 	res |= AND | I_ALU | DESTINATIONS[droite] | OP_LOGIC
@@ -132,11 +132,22 @@ def op_and(gauche: str, droite: str, num_line: int) -> int:
 def op_or(gauche: str, droite: str, num_line: int) -> int:
 	res = 0x0
 
-	if not gauche in OPERANDS and droite in OPERANDS:
+	if not (gauche in OPERANDS and droite in OPERANDS):
 		raise Exception(f"Error at instruction {num_line+1} : both {gauche} and {droite} have to be valid operands in ({OPERANDS})")
 
 	res |= OR | I_ALU | DESTINATIONS[droite] | OP_LOGIC
 	return res
+
+
+def op_xor(gauche: str, droite: str, num_line: int) -> int:
+	res = 0x0
+
+	if not (gauche in OPERANDS and droite in OPERANDS):
+		raise Exception(f"Error at instruction {num_line+1} : both {gauche} and {droite} have to be valid operands in ({OPERANDS})")
+
+	res |= XOR | I_ALU | DESTINATIONS[droite] | OP_LOGIC
+	return res
+
 
 
 
@@ -179,7 +190,7 @@ def op_initialization(number : int, list_dest : list, num_line: int, binary_code
 		if number > 2**(15) - 1: # can't load values greater than this in A
 			raise Exception(f"Error instruction {num_line+1} : can't load value {res}, too big")
 
-		binary_code &= I_DATA
+		binary_code &= I_DATA # means you can't assign and jump in the same line
 		binary_code |= number
 		binary_code |= I_DATA
 

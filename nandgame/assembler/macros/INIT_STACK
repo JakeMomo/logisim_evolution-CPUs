@@ -1,0 +1,7 @@
+// init stack
+DEFINE SP 0
+A = 256
+D = A
+A = SP
+;
+*A = D

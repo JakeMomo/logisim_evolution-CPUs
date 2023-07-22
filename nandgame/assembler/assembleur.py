@@ -4,6 +4,7 @@ Purpose of this code : convert assembly code to binary code
 readable by a logisim rom
 """
 
+import os
 import argparse
 from constants import *
 from utils import *
@@ -40,7 +41,7 @@ def parse_line(line, num_line):
 			raise Exception(f"Error at instruction {num_line} : cannot define a number as something else !")
 		except:
 			DICT_DEFINES[tokens[1]] = int(tokens[2])
-			return 0x0
+			return NOINSTR
 
 	elif tokens[0] == 'LABEL':
 		if len(tokens) != 2:
@@ -51,7 +52,7 @@ def parse_line(line, num_line):
 		except:
 			DICT_DEFINES[tokens[1]] = num_line # the hex adress of the next instruction
 			print(DICT_DEFINES['SP'])
-			return 0x0
+			return NOINSTR
 
 
 
@@ -59,9 +60,15 @@ def parse_line(line, num_line):
 #TESTER
 	if ';' in line:
 		line, jump = line.split(';')
-		jump = jump.replace(' ', '').replace('\n', '')
+		print(line, jump)
+
+		if line == jump == "": # NOP
+			return NOP
+
+		jump = jump.replace(' ', '')
 		if jump.upper() not in JUMPS:
-			raise Exception(f"Error at instruction {num_line+1} : {jump} is not a valid jump condition")
+			raise Exception(f"Error at instruction {line} : {jump} is not a valid jump condition")
+
 		binary_code |= JUMPS[jump] | I_ALU
 
 		if(line == ""): # no computations to do, only jump
@@ -76,7 +83,7 @@ def parse_line(line, num_line):
 		list_dest = dest.replace(" ", "").split(',') # get rid of spaces and commas
 		for var in list_dest: 
 			if not var in DESTINATIONS:
-				raise Exception(f"Error instruction {num_line+1} : destination {var} is not valid")
+				raise Exception(f"Error instruction {line} : destination {var} is not valid")
 			else:
 				binary_code |= DESTINATIONS[var]
 
@@ -114,6 +121,8 @@ def parse_line(line, num_line):
 		operation_type = AND
 	elif "|" in source:
 		operation_type = OR
+	elif '^' in source:
+		operation_type = XOR
 	elif "~" in source:
 		operation_type = NOT
 	else: # operand affectation
@@ -166,8 +175,20 @@ def parse_line(line, num_line):
 			raise Exception(f"Error at instruction {num_line} : can't operate on A and MEM at the same time")
 
 		binary_code |= op_or(gauche, droite, num_line)
-
+ 
 		return binary_code
+
+
+	elif operation_type == XOR:
+		gauche, droite = source.split("^")
+		gauche, droite = gauche.replace(" ", ""), droite.replace(" ", "")
+		if (gauche,droite) == ('A', '*A') or (gauche,droite) == ('*A', 'A'):
+			raise Exception(f"Error at instruction {num_line} : can't operate on A and MEM at the same time")
+
+		binary_code |= op_xor(gauche, droite, num_line)
+ 
+		return binary_code
+
 
 	# ~
 	#TESTER
@@ -188,27 +209,41 @@ def parse_line(line, num_line):
 		binary_code |= op_affectation(operand, num_line)
 
 	else:
-		raise Exception(f"Error at instruction {num_line+1} : unrecognized operation")
+		raise Exception(f"Error at instruction {line} : unrecognized operation")
 
 
 
 	return binary_code
 
 
-
-def write_binary(fichier):
+def write_binary(fichier, macros_path):
 	code = "v3.0 hex words addressed\n"
 	code += "0000:"
 
-	lines = fichier.readlines()
-	lines = [elt for elt in lines if elt != '\n' and not elt.startswith("//")]
-	if(len(lines) > 2 ** 25):
+	intermediate = fichier.readlines()
+
+	if(len(intermediate) > 2 ** 25):
 		raise Exception("Error : program is too big (>2^25)")  # bon ça arrivera jamais
+
+	# preprocess for macros and remove \n and comments
+	lines = []
+	for index, elt in enumerate(intermediate):
+		path = macros_path + '/' + elt.replace(" ", "").replace("\n", "")
+		if os.path.isfile(path):
+			with open(path, 'r') as module:
+				macro = module.readlines()
+				for truc in macro:
+					if truc != '\n' and not truc.startswith("//"):
+						lines.append(truc)
+
+		elif elt != '\n' and not elt.startswith("//"):
+			lines.append(elt)
+
 
 	num = 0
 	for line in lines:
 		instruction = format(parse_line(line, num), '04x') # the four last hex numbers 
-		if instruction != "0000":
+		if instruction != format(NOINSTR, '04x'):
 			code += " " + instruction
 			num += 1
 
@@ -227,9 +262,10 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument("file", help="source code file to assemble")
 	parser.add_argument("dest", nargs='?', default="", help="Destination file. If none will be the name of input file +/- extension")
+	parser.add_argument("--macros", nargs='?', default=".")
 	args = parser.parse_args()
-	with open(args.file) as fichier:
-		code = write_binary(fichier)
+	with open(args.file, 'r') as fichier:
+		code = write_binary(fichier, args.macros)
 		dest = args.dest if args.dest != "" else args.file.split(".")[0] + ".assembly"
 		with open(dest, 'w') as f:
 			f.write(code)
