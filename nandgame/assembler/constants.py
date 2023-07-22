@@ -3,15 +3,15 @@
 DESTINATIONS = {'A':0x20 , 'D': 0x10 , '*A': 0x8}
 
 #list of operands (right of '=')
-OPERANDS = {'A': 0x80, 'D': 0xb0, '*A': 0x1080}
+OPERANDS = {'A': 0x80, 'D': 0xc0, '*A': 0x1080}
 
 REG = set(['A', 'D'])
 
 #list of available jump conditions
 JUMPS = {"JMP":0x7, "JGE":0x3, "JLE":0x6, "JGT":0x1, "JEQ":0x2, "JLT":0x4}
 
-# if this register is not the first in an ALU operation, sw has to be activated
-MAIN_ALU_REG = "A"
+# if these register is not the first in an ALU operation, sw has to be activated
+MAIN_ALU_REG = {'A', '*A'}
 SETABLE_REG = {'A'}
 ADDABLE_NUMBERS = {1:0x500, -1:0x700, 0:0x80} # the numbers that can be added directly to all registers
 
@@ -24,6 +24,7 @@ NOT = 0x300 # add SW if reg is A
 ZERO = 0x80
 OP_AFFECT = 0x480
 
+MEM_IN = 0x1000
 SW = 0x40
 ZX = 0x80
 ZX_SW_FIELD = SW | ZX
@@ -33,3 +34,5 @@ OP_LOGIC = 0x000
 OP_ARITHMETIC = 0x400 # useful...
 I_ALU = 0x8000
 REG_FIELD = 0x38
+
+DICT_DEFINES = {}

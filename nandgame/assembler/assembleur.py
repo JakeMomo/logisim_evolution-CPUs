@@ -13,7 +13,47 @@ def parse_line(line, num_line):
 
 	binary_code = 0x0
 
-	line = line.upper()
+	line = line.upper().replace('\n', '')
+	#Line is :
+	# - upper case
+	# - without \n
+
+	# LA RAM  A BESOIN D'UN CYCLE POUR SORTIR UNE DONNEE !
+	# Donc pour faire A = SP ; *A = *A + 1 i faut faire :
+	# A = SP
+	# rien (par exemple un 2e A = SP)
+	# *A = *A + 1
+
+
+# Defines
+	tokens = line.split(' ')
+	tokens = [elt for elt in tokens if elt != ''] 
+	if tokens[0] == 'DEFINE':
+		if len(tokens) != 3:
+			raise Exception(f"Error at instruction {num_line} : incorrect number of define parameters")
+		try:
+			int(tokens[2])
+		except ValueError:
+			raise Exception(f"Error at instruction {num_line} : define has to have an int value")
+		try:
+			int(token[1]) # if it is a number it is not a string and it's no good to have 2 defined as 3 !
+			raise Exception(f"Error at instruction {num_line} : cannot define a number as something else !")
+		except:
+			DICT_DEFINES[tokens[1]] = int(tokens[2])
+			return 0x0
+
+	elif tokens[0] == 'LABEL':
+		if len(tokens) != 2:
+			raise Exception(f"Error at instruction {num_line} : incorrect number of label parameters. Expected 2 got {len(tokens)}")
+		try:
+			int(token[1]) # if it is a number it is not a string and it's no good to have 2 labeled as 3 !
+			raise Exception(f"Error at instruction {num_line} : cannot define a number as something else !")
+		except:
+			DICT_DEFINES[tokens[1]] = num_line # the hex adress of the next instruction
+			print(DICT_DEFINES['SP'])
+			return 0x0
+
+
 
 #jump (point virgule)
 #TESTER
@@ -22,8 +62,10 @@ def parse_line(line, num_line):
 		jump = jump.replace(' ', '').replace('\n', '')
 		if jump.upper() not in JUMPS:
 			raise Exception(f"Error at instruction {num_line+1} : {jump} is not a valid jump condition")
-		binary_code |= JUMPS[jump]
+		binary_code |= JUMPS[jump] | I_ALU
 
+		if(line == ""): # no computations to do, only jump
+			return binary_code
 
 # affectation (signe égal)
 	if("=" in line):
@@ -33,7 +75,7 @@ def parse_line(line, num_line):
 		# Extract destinations
 		list_dest = dest.replace(" ", "").split(',') # get rid of spaces and commas
 		for var in list_dest: 
-			if not var.upper() in DESTINATIONS:
+			if not var in DESTINATIONS:
 				raise Exception(f"Error instruction {num_line+1} : destination {var} is not valid")
 			else:
 				binary_code |= DESTINATIONS[var]
@@ -43,14 +85,21 @@ def parse_line(line, num_line):
 		# CHECK IF DATA INSTRUCTION
 
 		# HARD NUMBER INITIALIZATION
+
+		if source.replace(" ", "") in DICT_DEFINES:
+			binary_code = op_initialization(DICT_DEFINES[source.replace(" ", "")], list_dest, num_line, binary_code)
+			return binary_code
 		try: 
 			number = int(source.replace(" ", ""))
 			binary_code = op_initialization(number, list_dest, num_line, binary_code)
-
 			return binary_code
 
 		except ValueError:
-			pass
+			word = source.replace(" ", "")
+			if word in DICT_DEFINES:
+				binary_code = op_initialization(DICT_DEFINES[word], list_dest, num_line, binary_code)
+				return binary_code
+
 	else:
 		source = line.replace('\n', '')
 
@@ -77,23 +126,20 @@ def parse_line(line, num_line):
 	if operation_type == ADD:
 		gauche, droite = source.split("+")
 		gauche, droite = gauche.replace(" ", ""), droite.replace(" ", "")
+		if (gauche,droite) == ('A', '*A') or (gauche,droite) == ('*A', 'A'):
+			raise Exception(f"Error at instruction {num_line} : can't operate on A and MEM at the same time")
 
 		binary_code |= op_add(gauche, droite, num_line)
 
 		return binary_code
-
-
-		"""useless because addition, but may be useful for sub"""
-		#if gauche.upper() != MAIN_ALU_REG: # we have to switch
-		#	binary_code |= SW
-		# for now there are only 2 registers so there is no ambiguity
-
 		
 	# - (including negations)
 	#TESTER
 	elif operation_type == SUB:
 		gauche, droite = source.split("-")
 		gauche, droite = gauche.replace(" ", ""), droite.replace(" ", "")
+		if (gauche,droite) == ('A', '*A') or (gauche,droite) == ('*A', 'A'):
+			raise Exception(f"Error at instruction {num_line} : can't operate on A and MEM at the same time")
 
 		binary_code |= op_sub(gauche, droite, num_line)
 
@@ -104,6 +150,8 @@ def parse_line(line, num_line):
 	elif operation_type == AND:
 		gauche, droite = source.split("&")
 		gauche, droite = gauche.replace(" ", ""), droite.replace(" ", "")
+		if (gauche,droite) == ('A', '*A') or (gauche,droite) == ('*A', 'A'):
+			raise Exception(f"Error at instruction {num_line} : can't operate on A and MEM at the same time")
 
 		binary_code |= op_and(gauche, droite, num_line)
 
@@ -114,24 +162,27 @@ def parse_line(line, num_line):
 	elif operation_type == OR:
 		gauche, droite = source.split("|")
 		gauche, droite = gauche.replace(" ", ""), droite.replace(" ", "")
+		if (gauche,droite) == ('A', '*A') or (gauche,droite) == ('*A', 'A'):
+			raise Exception(f"Error at instruction {num_line} : can't operate on A and MEM at the same time")
 
 		binary_code |= op_or(gauche, droite, num_line)
 
 		return binary_code
-
 
 	# ~
 	#TESTER
 	elif operation_type == NOT:
 		gauche, droite = source.split('~')
 		gauche, droite = gauche.replace(" ", ""), droite.replace(" ", "")
+		if (gauche,droite) == ('A', '*A') or (gauche,droite) == ('*A', 'A'):
+			raise Exception(f"Error at instruction {num_line} : can't operate on A and MEM at the same time")
 
 		binary_code |= op_not(gauche, droite, num_line)
 
 		return binary_code
 			
 
-	# assignation
+	# affectation
 	elif operation_type == OP_AFFECT:
 		operand = source.replace(" ", "")
 		binary_code |= op_affectation(operand, num_line)
@@ -156,17 +207,15 @@ def write_binary(fichier):
 
 	num = 0
 	for line in lines:
-		code += " " + format(parse_line(line, num), '04x') # the four last hex numbers 
-		num += 1
+		instruction = format(parse_line(line, num), '04x') # the four last hex numbers 
+		if instruction != "0000":
+			code += " " + instruction
+			num += 1
 
-		if(num % 8 == 0): # 8 instructions per line
-			code += '\n'
-			code += format(num, '04x') + ":" # get rid of '0x' at the beginning
-
-
-		elif(num % 4 == 0): # every 4 line a bonus space
-			code += " "
-		print(line)
+			if(num % 4 == 0): # 8 instructions per line, to keep it readable
+				# would have liked to have 8 separated in 2 groups but then the file is interpreted wrong by logisim
+				code += '\n'
+				code += format(num, '04x') + ":" # get rid of '0x' at the beginning
 
 	print(code)
 	return code

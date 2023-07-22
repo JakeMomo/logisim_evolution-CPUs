@@ -6,15 +6,25 @@ def op_add(gauche : str, droite : str, num_line: int) -> int:
 
 	res = 0x0
 
-	if gauche in REG and droite in REG:
-				res |= ADD | I_ALU | OP_ARITHMETIC
+	if gauche in OPERANDS and droite in OPERANDS:
+		if gauche == '*A' or droite == '*A':
+			res |= MEM_IN
+		res |= ADD | I_ALU | OP_ARITHMETIC
 
 
-	elif gauche in REG and not(droite in REG): # e.g A + 1
+
+	elif gauche in OPERANDS and not(droite in OPERANDS): # e.g A + 1
 		try:
 			number = int(droite)
 			if number not in ADDABLE_NUMBERS:
 				raise Exception(f"Error at instruction {num_line+1} : can't add value {droite} and register {gauche} directly")
+
+			if gauche in MAIN_ALU_REG:
+				res |= SW
+
+			if gauche == '*A':
+				res |= MEM_IN
+
 
 			res |= ADDABLE_NUMBERS[number] | I_ALU | OP_ARITHMETIC
 
@@ -22,11 +32,17 @@ def op_add(gauche : str, droite : str, num_line: int) -> int:
 			raise Exception(f"Error instruction {num_line+1} : {droite} is not a number or valid regiter")
 
 
-	elif not(gauche in REG) and droite in REG: # e.g 1 + A
+	elif not(gauche in OPERANDS) and droite in OPERANDS: # e.g 1 + A
 		try:
 			number = int(gauche)
 			if number not in ADDABLE_NUMBERS:
 				raise Exception(f"Error at instruction {num_line+1} : can't add value {gauche} and register {droite} directly")
+
+			if gauche in MAIN_ALU_REG:
+				res |= SW
+
+			if droite == '*A':
+				res |= MEM_IN
 
 			res |= ADDABLE_NUMBERS[number] | I_ALU | OP_ARITHMETIC
 
@@ -34,7 +50,7 @@ def op_add(gauche : str, droite : str, num_line: int) -> int:
 			raise Exception(f"Error instruction {num_line+1} : {gauche} is not a number or valid regiter")
 
 
-	elif not(gauche in REG) and not(droite in REG): # both DESTINATIONS are plain number, just add them
+	elif not(gauche in OPERANDS) and not(droite in OPERANDS): # both DESTINATIONS are plain number, just add them
 		try:
 			un = int(gauche)
 			deux = int(droite)
@@ -49,7 +65,7 @@ def op_add(gauche : str, droite : str, num_line: int) -> int:
 			binary_code |= I_DATA
 
 		except ValueError:
-			raise Exception(f"Error at instruction {num_line+1} : {gauche} and {droite} are not valid DESTINATIONS")
+			raise Exception(f"Error at instruction {num_line+1} : {gauche} and {droite} are not valid destinations")
 
 	return res
 
@@ -57,39 +73,47 @@ def op_add(gauche : str, droite : str, num_line: int) -> int:
 def op_sub(gauche: str, droite: str, num_line: int) -> int:
 	res = 0x0
 
-	if gauche in REG and droite in REG:
+	if gauche in OPERANDS and droite in OPERANDS:
 		res |= SUB | I_ALU | OP_ARITHMETIC
-		if gauche == MAIN_ALU_REG:
+		if gauche in MAIN_ALU_REG:
 			res |= SW
 		return res 
 
-	elif gauche in REG and not(droite in REG): # e.g A - 1
+	elif gauche in OPERANDS and not(droite in OPERANDS): # e.g A - 1
 		try:
 			number = - int(droite) # because we cropped '-' we have to add it manually
 			if number not in ADDABLE_NUMBERS:
 				raise Exception(f"Error at instruction {num_line+1} : can't sub value {droite} to register {gauche} directly")
 
-			if gauche == MAIN_ALU_REG:
+			if gauche in MAIN_ALU_REG:
 				res |= SW
+
+			if gauche == '*A':
+				res |= MEM_IN
 
 			res |= ADDABLE_NUMBERS[number] | I_ALU | OP_ARITHMETIC
 
 		except ValueError:
 			raise Exception(f"Error instruction {num_line+1} : {droite} is not a number or valid regiter")
 
-	elif not(gauche in REG) and droite in REG: # e.g -A (or 1 - A but it is not supported)
+	# No 1 - A case, sorry losers
+
+	elif not(gauche in OPERANDS) and droite in OPERANDS: # e.g -A (or 1 - A but it is not supported)
 		# TODO replace by call to op_initialization
 
 		if gauche != '' and gauche != '0':
 			raise Exception(f"Error at instruction {num_line+1} : can't sub immediate value {gauche} to register {droite}")
 
-		if droite not in REG:
+		if droite not in OPERANDS:
 			raise Exception(f"Error instruction {num_line+1} : {droite} is not a number or valid regiter")
 
-		res |= NOT | DESTINATIONS[droite] | OP_ARITHMETIC
-
-		if droite != MAIN_ALU_REG:
+		if droite not in MAIN_ALU_REG:
 			res |= SW
+
+		if droite == '*A':
+			res |= MEM_IN
+
+		res |= NOT | DESTINATIONS[droite] | OP_ARITHMETIC
 
 	return res 
 
@@ -123,7 +147,7 @@ def op_not(gauche: str, droite: str, num_line: int) -> int:
 		raise Exception(f"Error at instruction {num_line+1} : negation takes one operand, not 2")
 
 	res &= ~ZX_SW_FIELD # cancel potential switches and zeros
-	if droite == MAIN_ALU_REG:
+	if droite in MAIN_ALU_REG:
 		#if operand=A, we have to switch to get A at the X port of logic unit
 		res |= SW
 	res |= NOT | I_ALU | OP_LOGIC
@@ -134,10 +158,9 @@ def op_not(gauche: str, droite: str, num_line: int) -> int:
 
 def op_affectation(operand: int, num_line: int) -> int:
 	res = 0x0
-
 	if operand in OPERANDS:
 		res |= OPERANDS[operand] | I_ALU | OP_ARITHMETIC
-		if operand != MAIN_ALU_REG:
+		if operand not in MAIN_ALU_REG:
 			res |= SW
 	else:
 		raise Exception(f"Error at instruction {num_line+1} : {operand} is not a valid operand")

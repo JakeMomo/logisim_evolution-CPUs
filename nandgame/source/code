@@ -1,23 +1,16 @@
-A = 0
-D = 0
-A = 12
+define SP 0
+LABEL debut
+A = 6
 D = A
+A = SP
+*A = D
+D = 1
 
-D = D + 1
-D = A + D
-D = 1 + D
-
-*A = D | A
-*A = A & D
-
-//foire
-~A ; JEQ
-D = A - D
-D = A - 1
-A = 0
-D = 0 ; JEQ
-
-A = 0
-D = 0
-A = 12
-D = A
+A = SP
+A = *A
+*A = D
+A = SP
+A = SP
+*A = *A + 1
+A = debut
+; jmp
