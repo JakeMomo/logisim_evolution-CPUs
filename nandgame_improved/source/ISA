@@ -26,10 +26,10 @@ structure :   0     op3    op2    op1  |   op0   dest1  dest0  src1_1
 	1001 : src1 >> src2 arithmetic
 	1010 : compare src1 and src2 : src1 > src, src1 == src2, src1 < src2
 
-JUMP : 
+JUMP : // encore à faire
 	1011 : jump at adress in reg src based on gt, eq lt flags of previous compare
-			0     op3    op2    op1  |   op0   src1   src0  x
-			x      x      x      x 	 |	  x 	lt     eq   gt
+			0     op3    op2    op1  |   op0     x    x  addr1
+		   addr0   x      x      x 	 |	  x 	lt   eq   gt
 
 
 	1100 : 
