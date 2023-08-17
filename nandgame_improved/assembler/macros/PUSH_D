@@ -1,0 +1,6 @@
+DEFINE SP 0
+A = SP
+A = *A
+*A = D
+A = SP
+*A = *A + 1

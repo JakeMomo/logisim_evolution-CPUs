@@ -1,0 +1,47 @@
+REG = {'A':0x0, 'B': 0x1, 'C':0x2, 'D':0x3}
+POS_SRC1 = 5
+POS_SRC2 = 7
+POS_DEST = 9
+POS_OPCODE = 11
+
+I_1 = 0x1
+I_2 = 0x11
+W_MEM = 0x4
+R_MEM = 0x8
+I_LIA = 0x8000
+
+NOINSTR = 0x7800
+
+DICT_DEFINES = {}
+
+POS_OPCODE = 11
+BINARY_INSTR = {
+	'ADD': 0x10 << POS_OPCODE,
+	'SUB': 0x11 << POS_OPCODE,
+	'MLS': 0x12 << POS_OPCODE, # multiply signed
+	'AND': 0x13 << POS_OPCODE,
+	'OR' : 0x14 << POS_OPCODE,
+	'XOR': 0x15 << POS_OPCODE,
+	'LSL': 0x17 << POS_OPCODE,
+	'LSR': 0x18 << POS_OPCODE,
+	'ASR': 0x19 << POS_OPCODE,
+}
+
+UNARY_INSTR = {
+	'NOT': 0x16 << POS_OPCODE,
+	'SET': 0x0 << POS_OPCODE,
+	'MOVE': BINARY_INSTR['ADD'] | I_1, # the immediate value will be 0
+}
+
+NODEST_INSTR = {
+	'JMP': 0x1B << POS_OPCODE,
+	'CMP': 0x1A << POS_OPCODE,
+}
+
+NON_COMMUTATIVE_INSTR = {"SUB", "LSL", "LSR", "ASR"}
+
+
+INSTRUCTIONS = {}
+INSTRUCTIONS.update(NODEST_INSTR)
+INSTRUCTIONS.update(BINARY_INSTR)
+INSTRUCTIONS.update(UNARY_INSTR)

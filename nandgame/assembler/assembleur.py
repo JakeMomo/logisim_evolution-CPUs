@@ -19,12 +19,6 @@ def parse_line(line, num_line):
 	# - upper case
 	# - without \n
 
-	# LA RAM  A BESOIN D'UN CYCLE POUR SORTIR UNE DONNEE !
-	# Donc pour faire A = SP ; *A = *A + 1 i faut faire :
-	# A = SP
-	# rien (par exemple un 2e A = SP)
-	# *A = *A + 1
-
 
 # Defines
 	tokens = line.split(' ')
@@ -247,7 +241,7 @@ def write_binary(fichier, macros_path):
 			code += " " + instruction
 			num += 1
 
-			if(num % 4 == 0): # 8 instructions per line, to keep it readable
+			if(num % 4 == 0): # 4 instructions per line, to keep it readable
 				# would have liked to have 8 separated in 2 groups but then the file is interpreted wrong by logisim
 				code += '\n'
 				code += format(num, '04x') + ":" # get rid of '0x' at the beginning
