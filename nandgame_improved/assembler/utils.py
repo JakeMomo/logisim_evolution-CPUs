@@ -7,7 +7,7 @@ class CodeError(Exception):
 		super().__init__(self.message)
 
 
-def get_operand_int(operand: str, num_line: int):
+def get_operand_int(operand: str, num_line: int, NO_SIZE_LIMIT=False):
 	instruction = 0x0
 
 	if operand in DICT_DEFINES:
@@ -24,7 +24,7 @@ def get_operand_int(operand: str, num_line: int):
 		try:
 			number = int(operand)
 
-			if not(number >= 0 and number < 2**2):
+			if not(number >= 0 and number < 2**2) and not(NO_SIZE_LIMIT):
 				raise Exception(f"Error at line {num_line} : immediate operand has to be positive and less or equal to 3")
 
 			instruction |= number

@@ -1,10 +1,5 @@
 DEFINE SP 0
-//A = SP
 SET A, SP
-//*A = *A - 1
-ADD B, [A], 0
-SUB [A], B, 1
-//A = *A
-ADD A, [A], 0
-//A = *A
-ADD A, [A], 0
+SUB [A], [A], 1
+MOVE A, [A]
+MOVE A, [A]

@@ -4,11 +4,13 @@ POS_SRC2 = 7
 POS_DEST = 9
 POS_OPCODE = 11
 
-I_1 = 0x1
-I_2 = 0x11
+I_1 = 0x10
+I_2 = 0x1
 W_MEM = 0x4
 R_MEM = 0x8
 I_LIA = 0x8000
+MEM_OPERAND_1 = 0x0
+MEM_OPERAND_2 = 0x2
 
 NOINSTR = 0x7800
 
@@ -30,7 +32,7 @@ BINARY_INSTR = {
 UNARY_INSTR = {
 	'NOT': 0x16 << POS_OPCODE,
 	'SET': 0x0 << POS_OPCODE,
-	'MOVE': BINARY_INSTR['ADD'] | I_1, # the immediate value will be 0
+	'MOVE': BINARY_INSTR['ADD'] | I_2, # the immediate value will be set in the programm
 }
 
 NODEST_INSTR = {

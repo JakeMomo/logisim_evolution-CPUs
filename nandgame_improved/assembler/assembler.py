@@ -66,7 +66,7 @@ def parse_line(line, num_line):
 		if not operands[0] in REG:
 			raise CodeError(num_line, f"{operands[0]} is not a valid destination for SET instruction")
 
-		num, mem_used = get_operand_int(operands[1], num_line)
+		num, mem_used = get_operand_int(operands[1], num_line, NO_SIZE_LIMIT = True)
 
 		if mem_used:
 			raise CodeError(num_line, "cannot use SET with a non int value")
@@ -153,23 +153,27 @@ def parse_line(line, num_line):
 			src2, mem_used_src2 = get_operand_int(operands[2], num_line)
 			binary_code |= I_2
 
-			if mem_used_src1: #memory and immediate operand used ! Memory has to be used in operand 2, and constant in op 1
-				if instr in NON_COMMUTATIVE_INSTR:
-					raise CodeError(num_line, f"Sorry, you cannot have a memory access in operand 1 and an I value as operand 2. Try swapping them ?")
-
 		except:
 			src2, mem_used_src2 = get_operand_mem(operands[2], num_line)
 
-		if (mem_used_dest + mem_used_src1 + mem_used_src2 >= 2):
-			raise Exception(f"Error at line {num_line} : cannot have more than one memory operand per instruction")
+		if (mem_used_dest + mem_used_src1 + mem_used_src2 == 2):
+			if not(mem_used_dest) or (dest != src1 and mem_used_src1) or (dest != src2 and mem_used_src2): #cannot have 2 mem operands, only 1 operand and 1 dest that are the same
+				raise Exception(f"Error at line {num_line} : cannot have two different memory operands in an instruction")
+			
+		elif (mem_used_dest + mem_used_src1 + mem_used_src2 > 2):
+			raise Exception(f"Error at line {num_line} : cannot have two different memory operands in an instruction")
 
 
 		binary_code |= dest << POS_DEST | src1 << POS_SRC1 | src2 << POS_SRC2
 
 		if mem_used_dest:
 			binary_code |= W_MEM
-		elif mem_used_src2 or mem_used_src1:
-			binary_code |= R_MEM
+
+		if mem_used_src1:
+			binary_code |= R_MEM | MEM_OPERAND_1
+		elif mem_used_src2:
+			binary_code |= R_MEM | MEM_OPERAND_2
+
 
 
 	elif instr in UNARY_INSTR:
@@ -178,19 +182,25 @@ def parse_line(line, num_line):
 
 		# get dest
 		dest, mem_used_dest = get_operand_mem(operands[0], num_line)
-		print(dest)
 
-		# get src1
-		src1, mem_used_src1 = get_operand_mem(operands[1], num_line)
+		# get src1, int or reg
+		try:
+			src1, mem_used_src1 = get_operand_int(operands[1], num_line)
+			binary_code |= I_1
 
-		if (mem_used_dest + mem_used_src1) >= 2:
-			raise CodeError(num_line, f"cannot have more than one memory operand per instruction")
+		except:
+			src1, mem_used_src1 = get_operand_mem(operands[1], num_line)
+
+
+		if (mem_used_dest + mem_used_src1 == 2):
+			if not(mem_used_dest) or (dest != src1 and mem_used_src1) or (dest != src2 and mem_used_src2): #cannot have 2 mem operands, only 1 operand and 1 dest that are the same
+				raise Exception(f"Error at line {num_line} : cannot have two different memory operands in an instruction")
 
 		binary_code |= dest << POS_DEST | src1 << POS_SRC1
 
 		if mem_used_dest:
 			binary_code |= W_MEM
-		elif mem_used_src1:
+		if mem_used_src1:
 			binary_code |= R_MEM
 
 
