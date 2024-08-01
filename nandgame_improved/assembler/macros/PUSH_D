@@ -1,6 +1,0 @@
-DEFINE SP 0
-SET A, SP
-MOVE A, [A]
-MOVE [A], D
-SET A, SP
-ADD [A], [A], 1

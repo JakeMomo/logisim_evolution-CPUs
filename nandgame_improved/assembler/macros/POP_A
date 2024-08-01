@@ -1,5 +1,0 @@
-DEFINE SP 0
-SET A, SP
-SUB [A], [A], 1
-MOVE A, [A]
-MOVE A, [A]

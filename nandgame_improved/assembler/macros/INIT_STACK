@@ -1,6 +1,0 @@
-// init stack
-DEFINE SP 0
-SET A, 0
-ADD D, A, 0
-SET A, SP
-ADD [A], D, 0

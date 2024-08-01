@@ -1,5 +1,0 @@
-DEFINE SP 0
-A = SP
-*A = *A - 1
-A = *A
-D = *A
