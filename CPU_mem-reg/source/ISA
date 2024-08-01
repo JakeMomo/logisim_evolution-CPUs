@@ -1,0 +1,45 @@
+Structure : 
+
+0xxx xxxx xxxx xxxx : LIA 0xX
+	donnée passée dans operand1
+
+1000 0xxx xxxx xxxx - 1101 1xxx xxxx xxxx : ALU instr
+
+structure :   1     op3    op2    op1  |   op0   dest1  dest0  src1_1  
+			src1_0 src2_1 src2_0 i_1   | r_mem  w_mem   mem_od  i_2
+
+	w_mem : will write at adress supplied by dest register
+	r_mem : will use value at adress suplied by reg src2 as operand 2
+	mem_od : which operand will output memory if r_mem is active. if 0 op1, if 1 op2
+
+	op codes : 
+	0000 : src1 + src2
+	0001 : src1 - src2
+	0010 : src1 * src2 signed
+	0011 : src1 & src2
+	0100 : src1 | src2
+	0101 : src1 ^ src2
+	0110 : ~src2     
+	0111 : src1 << src2
+	1000 : src1 >> src2 logic
+	1001 : src1 >> src2 arithmetic
+	1010 : compare src1 and src2 : src1 > src, src1 == src2, src1 < src2
+
+JUMP : // encore à faire
+	1011 : jump at adress in reg src based on gt, eq lt flags of previous compare
+			0     op3    op2    op1  |   op0     x    x   x
+		    x    addr1  addr0    x 	 |	r_mem 	lt   eq   gt
+
+	if all lt, eq, gt are 0, this is treated as an unconditional jump
+
+
+	1100 : 
+	1101 : 
+	1110 : 
+	1111 : 
+
+
+
+
+t - op3 - op2 - op1 - op0 - dest1 - dest0
+src2_1 - src2_0 - src1_1 - src1_0
